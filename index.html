@@ -1727,52 +1727,38 @@
         <div class="calc-card">
           <div class="calc-card-title"><i class="bi bi-input-cursor-text" style="color:var(--g-300)"></i>Field Input Parameters</div>
           <div class="formula-block">
-            AGB = 0.168 × ρ × (D²H)<sup>0.953</sup><br/>
-            Carbon = AGB × 0.47<br/>
-            CO₂ eq = Carbon × 3.67<br/>
-            O₂ = CO₂ × (32/44)
+            DBH (cm) = (Circ_in × 2.54) / π<br/>
+            AGB (kg) = 0.251 × ρ × DBH<sup>2.46</sup><br/>
+            Total Biomass (kg) = AGB × 1.26<br/>
+            Tree Carbon (kg) = Total Biomass × 0.47
           </div>
           <div class="row g-3">
             <div class="col-6">
-              <label class="field-label">DBH (cm)</label>
-              <input type="number" id="inp_dbh" class="field-input" placeholder="e.g. 12.5"/>
+              <label class="field-label">CSV Data Upload</label>
+              <input type="file" id="inp_csv" accept=".csv" class="field-input"/>
             </div>
             <div class="col-6">
-              <label class="field-label">Height (m)</label>
-              <input type="number" id="inp_h" class="field-input" placeholder="e.g. 7.2"/>
+              <label class="field-label">Dense Area (km²)</label>
+              <input type="number" id="inp_dense_area" class="field-input" value="16.9497" step="0.0001" oninput="calculate(true)"/>
             </div>
             <div class="col-6">
-              <label class="field-label">Wood Density (g/cm³)</label>
-              <input type="number" id="inp_wd" class="field-input" placeholder="e.g. 0.72" step="0.01"/>
+              <label class="field-label">Sparse Area (km²)</label>
+              <input type="number" id="inp_sparse_area" class="field-input" value="6.3324" step="0.0001" oninput="calculate(true)"/>
             </div>
             <div class="col-6">
-              <label class="field-label">Or Select Species</label>
-              <select id="inp_sp" class="field-input">
-                <option value="">Custom ρ above</option>
-                <option value="0.68">Avicennia marina (0.68)</option>
-                <option value="0.79">Rhizophora mucronata (0.79)</option>
-                <option value="0.55">Sonneratia alba (0.55)</option>
-                <option value="0.72">Aegiceras corniculatum (0.72)</option>
-              </select>
+              <label class="field-label">Dense Trees (per 100m²)</label>
+              <input type="number" id="inp_dense_trees" class="field-input" value="15" step="1" oninput="calculate(true)"/>
             </div>
             <div class="col-6">
-              <label class="field-label">No. of Trees</label>
-              <input type="number" id="inp_n" class="field-input" value="1"/>
+              <label class="field-label">Sparse Trees (per 100m²)</label>
+              <input type="number" id="inp_sparse_trees" class="field-input" value="6" step="1" oninput="calculate(true)"/>
             </div>
             <div class="col-6">
-              <label class="field-label">Plot Area (ha)</label>
-              <input type="number" id="inp_area" class="field-input" value="1" step="0.01"/>
-            </div>
-            <div class="col-6">
-              <label class="field-label">BGB Ratio</label>
-              <input type="number" id="inp_bgb" class="field-input" value="0.26" step="0.01"/>
-            </div>
-            <div class="col-6">
-              <label class="field-label">Direct AGB (T, optional)</label>
-              <input type="number" id="inp_agb" class="field-input" placeholder="Skip to compute"/>
+              <label class="field-label">Stand Structure Coeff.</label>
+              <input type="number" id="inp_stand_struct" class="field-input" value="0.11" step="0.01" oninput="calculate(true)"/>
             </div>
             <div class="col-12">
-              <button class="btn-calc" onclick="calculate()"><i class="bi bi-lightning-fill me-2"></i>Calculate Carbon Stock</button>
+              <button class="btn-calc" onclick="calculate(false)"><i class="bi bi-lightning-fill me-2"></i>Calculate Carbon Stock</button>
             </div>
           </div>
         </div>
@@ -1785,15 +1771,23 @@
             Enter field parameters and calculate
           </div>
           <div class="result-panel" id="resultPanel">
-            <div class="result-row"><span class="result-key">Above Ground Biomass (AGB)</span><span class="result-val" id="res_agb">—</span></div>
-            <div class="result-row"><span class="result-key">Below Ground Biomass (BGB)</span><span class="result-val" id="res_bgb">—</span></div>
-            <div class="result-row"><span class="result-key">Total Biomass</span><span class="result-val" id="res_total_b">—</span></div>
-            <div class="result-row"><span class="result-key">Carbon Stock (Total)</span><span class="result-val" id="res_carbon">—</span></div>
-            <div class="result-row"><span class="result-key">CO₂ Equivalent</span><span class="result-val" id="res_co2">—</span></div>
-            <div class="result-row"><span class="result-key">O₂ Production (annual est.)</span><span class="result-val" id="res_o2">—</span></div>
-            <div class="result-row"><span class="result-key">Stem Density</span><span class="result-val" id="res_density">—</span></div>
-            <div class="result-row"><span class="result-key">Carbon per Hectare</span><span class="result-val" id="res_carbon_ha">—</span></div>
-            <div class="result-row"><span class="result-key">Annual C Sequestration (est.)</span><span class="result-val" id="res_seq">—</span></div>
+            <!-- Section 1: Field Sample Analysis -->
+            <div class="section-eyebrow" style="color:var(--teal);font-size:0.6rem;margin:0.5rem 0 0.8rem;">
+              <span class="eyebrow-line" style="background:var(--teal);width:15px;"></span>Field Sample Insights
+            </div>
+            <div class="result-row"><span class="result-key">Total Trees Sampled</span><span class="result-val" id="res_trees">—</span></div>
+            <div class="result-row"><span class="result-key">Average Carbon per Tree</span><span class="result-val" id="res_avg_tree_c">—</span></div>
+            
+            <hr style="border-color:rgba(255,255,255,0.08);margin:1.2rem 0"/>
+            
+            <!-- Section 2: Landscape Projection -->
+            <div class="section-eyebrow" style="color:var(--g-500);font-size:0.6rem;margin-bottom:0.8rem;">
+              <span class="eyebrow-line" style="background:var(--g-500);width:15px;"></span>Landscape Projection (100m² Plot Based)
+            </div>
+            <div class="result-row"><span class="result-key">Estimated Total Dense Trees</span><span class="result-val" id="res_dense_trees">—</span></div>
+            <div class="result-row"><span class="result-key">Estimated Total Sparse Trees</span><span class="result-val" id="res_sparse_trees">—</span></div>
+            <div class="result-row"><span class="result-key">Total Landscape Carbon Storage</span><span class="result-val" id="res_total_landscape_c">—</span></div>
+            <div class="result-row"><span class="result-key">Total Carbon Credits (CO₂e)</span><span class="result-val" id="res_credits">—</span></div>
           </div>
           <div id="resultChartWrap" style="margin-top:1.5rem;display:none;">
             <canvas id="resultChart" height="160"></canvas>
@@ -2148,52 +2142,121 @@ function switchYear(yr, btn) {
 }
 
 /* ════ CALCULATOR ════ */
+const speciesDictionary = {
+  "A. marina": 0.70,
+  "White Mangrove": 0.60,
+  "Rhizophora mangle": 1.03,
+  "Avicennia germinans": 0.88,
+  "Rhizophora apiculata": 0.77,
+  "Bruguiera cylindrica": 0.75
+};
+
 let resultChart;
-function calculate() {
-  const dbh = parseFloat(document.getElementById('inp_dbh').value)||0;
-  const h   = parseFloat(document.getElementById('inp_h').value)||0;
-  const wd  = parseFloat(document.getElementById('inp_wd').value)||parseFloat(document.getElementById('inp_sp').value)||0.68;
-  const n   = parseFloat(document.getElementById('inp_n').value)||1;
-  const area= parseFloat(document.getElementById('inp_area').value)||1;
-  const bgbR= parseFloat(document.getElementById('inp_bgb').value)||0.26;
-  const agbDirect = parseFloat(document.getElementById('inp_agb').value);
-  let agb_per_tree;
-  if (!isNaN(agbDirect) && agbDirect > 0) {
-    agb_per_tree = agbDirect;
-  } else {
-    const d2h = Math.pow(dbh,2)*h;
-    agb_per_tree = d2h>0 ? 0.168*wd*Math.pow(d2h,0.953)/1000 : 0;
+function calculate(silent = false) {
+  const fileInput = document.getElementById('inp_csv');
+  const denseAreaKm2 = parseFloat(document.getElementById('inp_dense_area').value) || 16.9497;
+  const sparseAreaKm2 = parseFloat(document.getElementById('inp_sparse_area').value) || 6.3324;
+  const avgTreesDense = parseFloat(document.getElementById('inp_dense_trees').value) || 15;
+  const avgTreesSparse = parseFloat(document.getElementById('inp_sparse_trees').value) || 6;
+  const standStruct = parseFloat(document.getElementById('inp_stand_struct').value) || 0.11;
+  
+  if (!fileInput.files.length) {
+    if (!silent) alert("Please upload a CSV file.");
+    return;
   }
-  const agb_total = agb_per_tree*n;
-  const bgb_total = agb_total*bgbR;
-  const total_b   = agb_total+bgb_total;
-  const carbon    = total_b*0.47;
-  const co2       = carbon*3.67;
-  const o2        = co2*(32/44);
-  const density   = area>0 ? (n/area).toFixed(0) : '—';
-  const carbon_ha = area>0 ? (carbon/area).toFixed(2) : '—';
-  const seq       = (carbon*0.058).toFixed(3);
-  document.getElementById('resultPlaceholder').style.display = 'none';
-  document.getElementById('resultPanel').classList.add('show');
-  document.getElementById('res_agb').textContent       = agb_total.toFixed(3)+' T';
-  document.getElementById('res_bgb').textContent       = bgb_total.toFixed(3)+' T';
-  document.getElementById('res_total_b').textContent   = total_b.toFixed(3)+' T';
-  document.getElementById('res_carbon').textContent    = carbon.toFixed(3)+' T C';
-  document.getElementById('res_co2').textContent       = co2.toFixed(3)+' T CO₂';
-  document.getElementById('res_o2').textContent        = o2.toFixed(3)+' T O₂/yr';
-  document.getElementById('res_density').textContent   = density+' stems/ha';
-  document.getElementById('res_carbon_ha').textContent = carbon_ha+' T C/ha';
-  document.getElementById('res_seq').textContent       = seq+' T C/yr';
-  document.getElementById('resultChartWrap').style.display = 'block';
-  if (resultChart) resultChart.destroy();
-  resultChart = new Chart(document.getElementById('resultChart').getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: ['AGB','BGB','Total Bio.','Carbon','CO₂ eq'],
-      datasets:[{ data:[agb_total,bgb_total,total_b,carbon,co2].map(v=>parseFloat(v.toFixed(3))), backgroundColor:['#3dab3d','#2d8a2d','#57c757','#25a0a0','#4ec8c8'], borderRadius:6, borderSkipped:false }]
-    },
-    options: { plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'rgba(168,236,172,0.5)',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}, y:{ticks:{color:'rgba(168,236,172,0.5)',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}} } }
-  });
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    if (lines.length < 2) {
+      alert("CSV file seems to be empty or only contains headers.");
+      return;
+    }
+    
+    const headers = lines[0].split(',').map(h => h.trim());
+    const treeIdIdx = headers.indexOf('Tree_ID');
+    const speciesIdx = headers.indexOf('Species');
+    const circIdx = headers.indexOf('Circumference_in');
+    
+    if (treeIdIdx === -1 || speciesIdx === -1 || circIdx === -1) {
+      alert("CSV must contain columns: Tree_ID, Species, Circumference_in");
+      return;
+    }
+    
+    let totalTrees = 0;
+    let plotTotalCarbonKg = 0;
+    let speciesCarbon = {};
+    
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim());
+      if (cols.length <= Math.max(treeIdIdx, speciesIdx, circIdx)) continue;
+      
+      const species = cols[speciesIdx];
+      const circ_in = parseFloat(cols[circIdx]);
+      if (isNaN(circ_in)) continue;
+      
+      const dbh_cm = (circ_in * 2.54) / Math.PI;
+      const wd = speciesDictionary[species] || 0.70;
+      const agb_kg = 0.251 * wd * Math.pow(dbh_cm, 2.46);
+      const total_biomass_kg = agb_kg * 1.26;
+      const tree_carbon_kg = total_biomass_kg * 0.47;
+      
+      plotTotalCarbonKg += tree_carbon_kg;
+      if (!speciesCarbon[species]) speciesCarbon[species] = 0;
+      speciesCarbon[species] += tree_carbon_kg;
+      totalTrees++;
+    }
+    
+    const rawAvgTreeCarbonKg = totalTrees > 0 ? plotTotalCarbonKg / totalTrees : 0;
+    const trueAvgTreeCarbonKg = rawAvgTreeCarbonKg * standStruct;
+    
+    const totalDensePlots = denseAreaKm2 * 10000;
+    const totalSparsePlots = sparseAreaKm2 * 10000;
+    
+    const totalLandscapeDenseTrees = totalDensePlots * avgTreesDense;
+    const totalLandscapeSparseTrees = totalSparsePlots * avgTreesSparse;
+    
+    const denseCarbonKg = totalLandscapeDenseTrees * trueAvgTreeCarbonKg;
+    const sparseCarbonKg = totalLandscapeSparseTrees * trueAvgTreeCarbonKg;
+    
+    const totalLandscapeCarbonTonnes = (denseCarbonKg + sparseCarbonKg) / 1000;
+    const carbonCredits = totalLandscapeCarbonTonnes * 3.67;
+    
+    document.getElementById('resultPlaceholder').style.display = 'none';
+    document.getElementById('resultPanel').classList.add('show');
+    
+    document.getElementById('res_trees').textContent = totalTrees;
+    document.getElementById('res_avg_tree_c').textContent = trueAvgTreeCarbonKg.toFixed(2) + ' kg';
+    
+    document.getElementById('res_dense_trees').textContent = Math.round(totalLandscapeDenseTrees).toLocaleString();
+    document.getElementById('res_sparse_trees').textContent = Math.round(totalLandscapeSparseTrees).toLocaleString();
+    document.getElementById('res_total_landscape_c').textContent = totalLandscapeCarbonTonnes.toFixed(2) + ' Metric Tonnes';
+    document.getElementById('res_credits').textContent = carbonCredits.toFixed(2) + ' Metric Tonnes CO₂e';
+    
+    document.getElementById('resultChartWrap').style.display = 'block';
+    if (resultChart) resultChart.destroy();
+    resultChart = new Chart(document.getElementById('resultChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: ['Dense C', 'Sparse C', 'Total C', 'CO₂e Credits'],
+        datasets:[{
+          data: [denseCarbonKg / 1000, sparseCarbonKg / 1000, totalLandscapeCarbonTonnes, carbonCredits],
+          backgroundColor: ['#2d8a2d', '#7ddc7d', '#25a0a0', '#d4aa52'],
+          borderRadius: 6,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        plugins:{legend:{display:false}},
+        scales: {
+          x:{ticks:{color:'rgba(168,236,172,0.5)',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+          y:{ticks:{color:'rgba(168,236,172,0.5)',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}
+        }
+      }
+    });
+  };
+  reader.readAsText(fileInput.files[0]);
 }
 function calcSeq() {
   const c1=parseFloat(document.getElementById('seq_c1').value);
